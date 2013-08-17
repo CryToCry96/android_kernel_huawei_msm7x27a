@@ -197,12 +197,8 @@ void pwm_set_backlight(struct msm_fb_data_type *mfd)
 {
 	/*< Delete unused variable */
 	/*When all the device are resume that can turn the light*/
-	if(atomic_read(&suspend_flag)) 
-	{
-		mfd_local = mfd;
-		backlight_set = TRUE;
-		return;
-	}
+	mfd_local = mfd;
+	backlight_set = TRUE;
 	/*< Delete some lines,control backlight in hardware lights.c by property */
 	if (get_hw_lcd_ctrl_bl_type() == CTRL_BL_BY_MSM)
 	{
