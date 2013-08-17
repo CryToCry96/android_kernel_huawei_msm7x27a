@@ -794,7 +794,26 @@ void __init msm8x25_spm_device_init(void)
 {
 	msm_spm_init(msm_spm_data, ARRAY_SIZE(msm_spm_data));
 }
+#ifdef CONFIG_HUAWEI_FEATURE_OEMINFO
+static struct resource rmt_oeminfo_resources[] = {
+       {
+		.flags  = IORESOURCE_MEM,
+       },
+};
 
+static struct platform_device rmt_oeminfo_device = {
+       .name           = "rmt_oeminfo",
+       .id             = -1,
+       .num_resources  = ARRAY_SIZE(rmt_oeminfo_resources),
+       .resource       = rmt_oeminfo_resources,
+};
+
+int __init rmt_oeminfo_add_device(void)
+{
+  platform_device_register(&rmt_oeminfo_device);
+  return 0;
+}
+#endif
 #define MDP_BASE		0xAA200000
 #define MIPI_DSI_HW_BASE	0xA1100000
 
@@ -1065,6 +1084,8 @@ struct platform_device msm8625_device_uart_dm1 = {
 	},
 };
 
+/* uart2dm should use msm_serial_hs driver instead of msm_serial_hsl driver */
+#ifndef CONFIG_HUAWEI_KERNEL
 static struct resource msm8625_uart2dm_resources[] = {
 	{
 		.start	= MSM_UART2DM_PHYS,
@@ -1085,6 +1106,52 @@ struct platform_device msm8625_device_uart_dm2 = {
 	.num_resources	= ARRAY_SIZE(msm8625_uart2dm_resources),
 	.resource	= msm8625_uart2dm_resources,
 };
+#else
+static struct resource msm8625_uart2_dm_resources[] = {
+/* define IORESOURCE_MEM, IORESOURCE_IRQ, IORESOURCE_DMA for uart2dm used in msm_hs_probe() */
+	{
+		.start	= MSM_UART2DM_PHYS,
+		.end	= MSM_UART2DM_PHYS + PAGE_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.start	= MSM8625_INT_UART2DM_IRQ,
+		.end	= MSM8625_INT_UART2DM_IRQ,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{
+		.start	= MSM8625_INT_UART2DM_RX,
+		.end	= MSM8625_INT_UART2DM_RX,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{
+		.start	= DMOV_HSUART2_TX_CHAN,
+		.end	= DMOV_HSUART2_RX_CHAN,
+		.name	= "uartdm_channels",
+		.flags	= IORESOURCE_DMA,
+	},
+	{
+		.start	= DMOV_HSUART2_TX_CRCI,
+		.end	= DMOV_HSUART2_RX_CRCI,
+		.name	= "uartdm_crci",
+		.flags	= IORESOURCE_DMA,
+	},
+};
+
+static u64 msm_uart_dm2_dma_mask = DMA_BIT_MASK(32);
+
+struct platform_device msm8625_device_uart_dm2 = {
+	.name	= "msm_serial_hs",
+	.id	= 1, 
+	.num_resources	= ARRAY_SIZE(msm8625_uart2_dm_resources),
+	.resource	= msm8625_uart2_dm_resources,
+	.dev	= {
+		.dma_mask		= &msm_uart_dm2_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+
+#endif
 
 static struct resource msm8625_resources_adsp[] = {
 	{
@@ -1626,7 +1693,6 @@ static int __init msm8625_cpu_id(void)
 	case 0x771:
 	case 0x77C:
 	case 0x780:
-	case 0x785: /* Edge-only MSM8125-0 */
 	case 0x8D0:
 		cpu = MSM8625;
 		break;
@@ -1768,7 +1834,6 @@ static struct msm_cpr_config msm_cpr_pdata = {
 	.max_nom_freq = 700800,
 	.max_freq = 1401600,
 	.max_quot = 0,
-	.disable_cpr = false,
 	.vp_data = &vp_data,
 	.get_quot = msm_cpr_get_quot,
 	.clk_enable = msm_cpr_clk_enable,
@@ -1801,7 +1866,6 @@ static void __init msm_cpr_init(void)
 	}
 
 	msm_smem_get_cpr_info(cpr_info);
-	msm_cpr_pdata.disable_cpr = cpr_info->disable_cpr;
 
 	/**
 	 * Set the ring_osc based on efuse BIT(0)
@@ -1834,11 +1898,11 @@ static void __init msm_cpr_init(void)
 	 * Ditto for a 1.0GHz part.
 	 */
 	if (msm8625_cpu_id() == MSM8625A) {
-		msm_cpr_pdata.max_quot += 30;
+		msm_cpr_pdata.max_quot += 100;
 		if (msm_cpr_pdata.max_quot > 1400)
 			msm_cpr_pdata.max_quot = 1400;
 	} else if (msm8625_cpu_id() == MSM8625) {
-		msm_cpr_pdata.max_quot += 50;
+		msm_cpr_pdata.max_quot += 120;
 		if (msm_cpr_pdata.max_quot > 1350)
 			msm_cpr_pdata.max_quot = 1350;
 	}
@@ -1929,7 +1993,12 @@ static struct clk_lookup msm_clock_8625_dummy[] = {
 	CLK_DUMMY("core_clk",		uart1_clk.c,	"msm_serial.0", 0),
 	CLK_DUMMY("core_clk",		uart2_clk.c,	"msm_serial.1", 0),
 	CLK_DUMMY("core_clk",		uart1dm_clk.c,	"msm_serial_hs.0", 0),
+/* uart2dm should use msm_serial_hs clock instead of msm_serial_hsl clock */
+#ifndef CONFIG_HUAWEI_KERNEL
 	CLK_DUMMY("core_clk",		uart2dm_clk.c,	"msm_serial_hsl.0", 0),
+#else	
+	CLK_DUMMY("core_clk",		uart2dm_clk.c,	"msm_serial_hs.1", 0),
+#endif	
 	CLK_DUMMY("usb_hs_core_clk",	usb_hs_core_clk.c, NULL, 0),
 	CLK_DUMMY("usb_hs2_clk",	usb_hs2_clk.c,	NULL, 0),
 	CLK_DUMMY("usb_hs_clk",		usb_hs_clk.c,	NULL, 0),

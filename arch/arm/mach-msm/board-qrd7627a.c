@@ -826,7 +826,6 @@ static void __init msm7627a_reserve(void)
 static void __init msm8625_reserve(void)
 {
 	memblock_remove(MSM8625_SECONDARY_PHYS, SZ_8);
-	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
 	msm7627a_reserve();
 }
 
@@ -993,7 +992,8 @@ static void __init msm_qrd_init(void)
 	msm_fb_add_devices();
 
 #if defined(CONFIG_BT) && defined(CONFIG_MARIMBA_CORE)
-	msm7627a_bt_power_init();
+    /* qcomm QRD phone concerned not need by hw product*/
+	//msm7627a_bt_power_init();
 #endif
 
 	msm7627a_camera_init();
