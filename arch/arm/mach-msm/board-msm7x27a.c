@@ -1292,9 +1292,9 @@ static void __init virtualkeys_init(void)
         || machine_is_msm8x25_C8812P())
     {
     	buf_vkey_size = sprintf(buf_virtualkey,
-        			__stringify(EV_KEY) ":" __stringify(KEY_BACK)  ":57:850:100:80"
+        			__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":57:850:100:80"
         		   ":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":240:850:100:80"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":423:850:100:80"
+        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_BACK) ":423:850:100:80"
         		   "\n"); 
     }
     else if(machine_is_msm8x25_H881C()
