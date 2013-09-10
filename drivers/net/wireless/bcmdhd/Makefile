@@ -23,6 +23,15 @@ DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
 	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o linux_osl.o            \
 	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o
 
+ifneq ($(CONFIG_HUAWEI_KERNEL),)
+DHDCFLAGS += -DCUSTOM_SDCC_WIFI_SLOT=2	\
+			 -DCUSTOM_OOB_GPIO_NUM=48	\
+			 -DSET_RANDOM_MAC_SOFTAP	\
+			 -DDHD_USE_STATIC_BUF		\
+			 -DCONFIG_WIFI_CONTROL_FUNC	\
+			 -Wno-unused-function
+endif
+
 obj-$(CONFIG_BCMDHD) += bcmdhd.o
 bcmdhd-objs += $(DHDOFILES)
 ifneq ($(CONFIG_WIRELESS_EXT),)
